@@ -6,13 +6,13 @@ import pygame, sys, math, random
 from pygame.locals import *
 from pygame import gfxdraw
 from PIL import Image
-#from player import *
 
 pygame.init()
 fpsClock=pygame.time.Clock()
 
 screen = pygame.display.set_mode((928,534))
 pygame.display.set_caption('jebrjf')
+myfont = pygame.font.SysFont("monospace", 20)
 
 bg_layer_1 = pygame.image.load('bg_2x.png')
 bg_layer_1_x = 0
@@ -25,31 +25,33 @@ right_pressed = False
 up_pressed = False
 down_pressed = False
 
-coins_collected = 0
-coin_removal = 0
+spawn_counter = 0
+sawn_rand = 0
 
-#this collision engine is brought to you by ray peng
+
 def OnGround(player):
 
-    for blocks in blocklist:
-        if blocks.leftx < player.x + 64 or blocks.rightx > player.x:
-            if blocks.y + 32 == player.y:
-                player.jumppower = 0
-                return False
-        if blocks.leftx < player.x + 64 or blocks.rightx > player.x:
-            if blocks.y == player.y + 64:
+    blocks_hit_list = pygame.sprite.pygame.sprite.spritecollide(player, blocklist, False)
+    
+    if len(blocks_hit_list) >= 1:
+        for block in blocks_hit_list:
+            if player.y+50 <= block.y and player.y+64 >= block.y:
+                player.y = block.y-64
                 return True
-            else:
-                return False
+            elif player.y+50 > block.y and player.y <= block.y+26 and player.x > block.leftx+16:
+                if player.speed <= 0:
+                    player.speed = 0
+            elif player.y+50 > block.y and player.y <= block.y+26 and player.x < block.leftx+16:
+                if player.speed >= 0:
+                    player.speed = 0
+            elif player.y >= block.y+26:
+                player.jumppower = -2
+            return False
+    else:
+        return False
 
 def CollectCoins(player):
-    global coins_collected
-
-    for i in coins:
-        if (i.xright > player.x) or (player.x+64 < i.xleft):
-            if (i.ytop < player.y) or (i.ybtm > player.y+64):
-                coins_collected += 1
-                i.collected = True
+    coinlist = pygame.sprite.pygame.sprite.spritecollide(player, coins, True)
 
 def DrawWindow():
     screen.blit(bg_layer_1, (bg_layer_1_x, 0))
@@ -61,18 +63,25 @@ def DrawWindow():
     for i in coins:
         #if i.collected == False:
         screen.blit(i.image, (i.xleft, i.ytop))
+    for i in enemylist:
+        screen.blit(i.image, (i.x, i.y))
     pygame.display.update()
 
-class Player:
+class Player(pygame.sprite.Sprite):
     def __init__(self):
+
+        pygame.sprite.Sprite.__init__(self)
+        
         self.x = 120
         self.y = 13*32
         self.speed = 0
         self.jumpcounter = 0
-        self.jumppower = 7
+        self.jumppower = 8
         self.jumping = False
         self.whichimage = 1
+        self.state = "air"
         self.image = pygame.image.load('kamaitachi.png')
+        self.rect = pygame.Rect(self.x, self.y, 64, 64)
 
     def move(self):
 
@@ -89,19 +98,20 @@ class Player:
         else:
             self.speed = 0
 
-        if (self.jumping == True):
+        self.state = "air"
+
+        if OnGround(MAIN_PLAYER): 
+            self.state = "ground"
+            self.jumppower = 8
+
+        if self.state != "ground":
             self.y -= self.jumppower
             self.jumpcounter += 1
             #decreases jump power every six frames
             #raise to make jump floatier and lower to make more tight
-            if down_pressed == False:
-                if self.jumpcounter > 5:
-                    self.jumppower -= 1
-                    self.jumpcounter = 0
-            #stops jumping once on the ground
-            if OnGround(MAIN_PLAYER) == True:
-                self.jumping = False
-                self.jumppower = 7
+            if self.jumpcounter > 4:
+                self.jumppower -= 1
+                self.jumpcounter = 0
 
         self.x += self.speed
 
@@ -109,6 +119,8 @@ class Player:
             self.x = 866
         elif self.x < 0:
             self.x = 0
+
+        self.rect = pygame.Rect(self.x, self.y, 64, 64)
 
 
     def update(self):
@@ -128,52 +140,135 @@ class Player:
             if self.whichimage == 19:
                 self.whichimage = 0
 
-class Blocks:
+class Enemy(pygame.sprite.Sprite):
+    def __init__(self, xpos, ypos, speed):
+
+        pygame.sprite.Sprite.__init__(self)
+
+        self.image1 = pygame.image.load('thundermuffin.png')
+        self.image2 = pygame.image.load('thundermuffin2.png')
+        self.image3 = pygame.image.load('thundermuffin3.png')
+        self.image = self.image3
+        self.speed = speed
+        self.state = "ground"
+        self.jumppower = 5
+        self.jumpcounter = 4
+        self.x = xpos
+        self.y = ypos
+        self.rect = pygame.Rect(xpos+3, ypos+19, 58, 42)
+        self.imageswitch = 0
+    
+    def switchimage(self):
+        self.imageswitch += 1
+        if self.imageswitch <= 19:
+            self.image = self.image1
+        else:
+            self.image = self.image2
+
+        if self.imageswitch == 39:
+            self.imageswitch = 0
+
+    def move(self):
+
+        self.state = "air"
+
+        if OnGround(self): 
+            self.state = "ground"
+            self.jumppower = 5
+
+        if self.state != "ground":
+            self.y -= self.jumppower
+            self.jumpcounter += 1
+            #decreases jump power every six frames
+            #raise to make jump floatier and lower to make more tight
+            if self.jumpcounter > 4:
+                    self.jumppower -= 1
+                    self.jumpcounter = 0
+
+        self.x += self.speed
+
+        if self.x > 866 or self.x < 0:
+            self.speed *= -1
+
+        self.rect = pygame.Rect(self.x+3, self.y+19, 58, 42)
+
+class Blocks(pygame.sprite.Sprite):
     def __init__(self, xpos, ypos, sprite):
+
+        pygame.sprite.Sprite.__init__(self)
+
         if sprite == 1:
             self.image = pygame.image.load('block.png')
+            self.rect = pygame.Rect(xpos, ypos, 32, 32)
         elif sprite == 2:
             self.image = pygame.image.load('blocklooong.png')
+            self.rect = pygame.Rect(xpos, ypos, 1820, 64)
+        
         self.leftx = xpos
         self.rightx = xpos + self.image.get_width()
         self.y = ypos
         self.blocks_speed = 1.2
 
-class Coin:
+class Coin(pygame.sprite.Sprite):
     def __init__(self, xpos, ypos):
+
+        pygame.sprite.Sprite.__init__(self)
+
         self.xleft = xpos
         self.xright = xpos+64
         self.ytop = ypos
         self.ybtm = ypos+64
         self.image = self.image = pygame.image.load('kkoin.png')
+        self.rect = pygame.Rect(xpos, ypos, 64, 64)
         self.collected = False
     
-coins = []
-coins.append(Coin(32, 8*32))
-coins.append(Coin(26*32, 8*32))   
+#adding coins to stage
+coins = pygame.sprite.Group()
+coins.add(Coin(32, 8*32))
+coins.add(Coin(26*32, 8*32))   
 
-blocklist = []
-# for counter in range(30):
-#     blocklist.append(Blocks(counter*32, 8*32, 1))
-blocklist.append(Blocks(0, 15*32, 2))
+#adding blocks to stage
+blocklist = pygame.sprite.Group()
+blocklist.add(Blocks(0, 15*32, 2))
 
-blocklist.append(Blocks(0, 10*32, 1))
-blocklist.append(Blocks(32, 10*32, 1))
-blocklist.append(Blocks(2*32, 10*32, 1))
-blocklist.append(Blocks(3*32, 10*32, 1))
+#middle left
+blocklist.add(Blocks(0, 10*32, 1))
+blocklist.add(Blocks(32, 10*32, 1))
+blocklist.add(Blocks(2*32, 10*32, 1))
+blocklist.add(Blocks(3*32, 10*32, 1))
 
-blocklist.append(Blocks(28*32, 10*32, 1))
-blocklist.append(Blocks(27*32, 10*32, 1))
-blocklist.append(Blocks(26*32, 10*32, 1))
-blocklist.append(Blocks(25*32, 10*32, 1))
+#middle right
+blocklist.add(Blocks(28*32, 10*32, 1))
+blocklist.add(Blocks(27*32, 10*32, 1))
+blocklist.add(Blocks(26*32, 10*32, 1))
+blocklist.add(Blocks(25*32, 10*32, 1))
 
-blocklist.append(Blocks(12*32, 10*32, 1))
-blocklist.append(Blocks(13*32, 10*32, 1))
-blocklist.append(Blocks(14*32, 10*32, 1))
-blocklist.append(Blocks(15*32, 10*32, 1))
-blocklist.append(Blocks(16*32, 10*32, 1))
-blocklist.append(Blocks(17*32, 10*32, 1))
+#middle center
+blocklist.add(Blocks(12*32, 10*32, 1))
+blocklist.add(Blocks(13*32, 10*32, 1))
+blocklist.add(Blocks(14*32, 10*32, 1))
+blocklist.add(Blocks(15*32, 10*32, 1))
+blocklist.add(Blocks(16*32, 10*32, 1))
+blocklist.add(Blocks(17*32, 10*32, 1))
 
+#top left
+blocklist.add(Blocks(6*32, 5*32, 1))
+blocklist.add(Blocks(7*32, 5*32, 1))
+blocklist.add(Blocks(8*32, 5*32, 1))
+blocklist.add(Blocks(9*32, 5*32, 1))
+
+#top right
+blocklist.add(Blocks(20*32, 5*32, 1))
+blocklist.add(Blocks(21*32, 5*32, 1))
+blocklist.add(Blocks(22*32, 5*32, 1))
+blocklist.add(Blocks(23*32, 5*32, 1))
+
+enemylist = pygame.sprite.Group()
+# spawn_rand = random.randint(1, 2)
+# if spawn_rand == 1:
+#     enemylist.add(Enemy(8*32, 3*32, -3))
+# elif spawn_rand == 2:
+#     enemylist.add(Enemy(21*32, 3*32, -3))
 MAIN_PLAYER = Player()
 
 rungame = True
@@ -190,8 +285,6 @@ while rungame:
             right_pressed = True
             left_pressed = False
         elif event.type == KEYDOWN and event.key == pygame.K_w:
-            if not (MAIN_PLAYER.jumping):
-                MAIN_PLAYER.jumping = True
             up_pressed = True
         else:
             up_pressed = False
@@ -209,6 +302,20 @@ while rungame:
     MAIN_PLAYER.move()
     MAIN_PLAYER.update()
     CollectCoins(MAIN_PLAYER)
+    for i in enemylist:
+        i.switchimage()
+        i.move()
+    
+    spawn_counter += 1
+    if spawn_counter >= 300:
+        spawn_rand = random.randint(1, 200)
+        if spawn_rand == 1:
+            enemylist.add(Enemy(8*32, 3*32, 3))
+            spawn_counter = 100
+        elif spawn_rand == 2:
+            enemylist.add(Enemy(21*32, 3*32, -3))
+            spawn_counter = 100
+
 
     DrawWindow()
 

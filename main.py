@@ -53,7 +53,6 @@ def CollectCoins(player):
 
 def DrawWindow():
     screen.blit(bg_layer_1, (bg_layer_1_x, 0))
-    screen.blit(bg_layer_1, (bg_layer_1_x2, 0))
     screen.blit(bg_layer_2, (bg_layer_2_x, 213))
     screen.blit(bg_layer_2, (bg_layer_2_x2, 213))
     screen.blit(MAIN_PLAYER.image, (MAIN_PLAYER.x, MAIN_PLAYER.y))

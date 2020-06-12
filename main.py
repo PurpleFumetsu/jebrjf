@@ -22,8 +22,8 @@ bg_layer_2_x2 = (bg_layer_2.get_width())
 
 left_pressed = False
 right_pressed = False
-up_pressed = False
-down_pressed = False
+
+bullet_counter = 0
 
 spawn_counter = 0
 sawn_rand = 0
@@ -65,6 +65,8 @@ def DrawWindow():
         screen.blit(i.image, (i.xleft, i.ytop))
     for i in enemylist:
         screen.blit(i.image, (i.x, i.y))
+    for i in bulletlist:
+        screen.blit(i.image, (i.x, i.y))
     pygame.display.update()
 
 class Player(pygame.sprite.Sprite):
@@ -72,15 +74,16 @@ class Player(pygame.sprite.Sprite):
 
         pygame.sprite.Sprite.__init__(self)
         
-        self.x = 120
+        self.x = 150
         self.y = 13*32
         self.speed = 0
         self.jumpcounter = 0
         self.jumppower = 8
         self.jumping = False
-        self.whichimage = 1
         self.state = "air"
-        self.image = pygame.image.load('kamaitachi.png')
+        self.image1 = pygame.image.load('kamaitachi.png')
+        self.image2 = pygame.image.load('kamaitachileft.png')
+        self.image = self.image1
         self.rect = pygame.Rect(self.x, self.y, 64, 64)
 
     def move(self):
@@ -125,20 +128,29 @@ class Player(pygame.sprite.Sprite):
 
     def update(self):
         if right_pressed == True:
-            if self.whichimage <= 9:
-                self.image = pygame.image.load('kamaitachi.png')
-            else:
-                self.image = pygame.image.load('kamaitachi2.png')
+            self.image = self.image1
         elif left_pressed == True:
-            if self.whichimage <= 9:
-                self.image = pygame.image.load('kamaitachileft.png')
-            else:
-                self.image = pygame.image.load('kamaitachileft2.png')
+            self.image = self.image2
 
-        if OnGround(MAIN_PLAYER) and self.speed != 0:
-            self.whichimage += 1
-            if self.whichimage == 19:
-                self.whichimage = 0
+class bullet(pygame.sprite.Sprite):
+    def __init__(self):
+
+        pygame.sprite.Sprite.__init__(self)
+
+        if MAIN_PLAYER.image == MAIN_PLAYER.image1:
+            self.image = pygame.image.load('projectile.png')
+            self.x = MAIN_PLAYER.x + 48
+            self.speed = 5
+        else:
+            self.image = pygame.image.load('projectileleft.png')
+            self.x = MAIN_PLAYER.x - 48
+            self.speed = -5
+        self.y = MAIN_PLAYER.y
+        self.rect = pygame.Rect(self.x, self.y+5, 54, 42)
+    
+    def move(self):
+        self.x += self.speed
+        self.rect = pygame.Rect(self.x, self.y+5, 54, 42)
 
 class Enemy(pygame.sprite.Sprite):
     def __init__(self, xpos, ypos, speed):
@@ -192,6 +204,13 @@ class Enemy(pygame.sprite.Sprite):
 
         self.rect = pygame.Rect(self.x+3, self.y+19, 58, 42)
 
+    def collisioncheck(self, other):
+        if pygame.sprite.collide_rect(self, other):
+            if other.image == MAIN_PLAYER.image:
+                return 'player death'
+            else:
+                return 'hit'
+
 class Blocks(pygame.sprite.Sprite):
     def __init__(self, xpos, ypos, sprite):
 
@@ -218,9 +237,8 @@ class Coin(pygame.sprite.Sprite):
         self.xright = xpos+64
         self.ytop = ypos
         self.ybtm = ypos+64
-        self.image = self.image = pygame.image.load('kkoin.png')
+        self.image = pygame.image.load('kkoin.png')
         self.rect = pygame.Rect(xpos, ypos, 64, 64)
-        self.collected = False
     
 #adding coins to stage
 coins = pygame.sprite.Group()
@@ -264,16 +282,12 @@ blocklist.add(Blocks(22*32, 5*32, 1))
 blocklist.add(Blocks(23*32, 5*32, 1))
 
 enemylist = pygame.sprite.Group()
-# spawn_rand = random.randint(1, 2)
-# if spawn_rand == 1:
-#     enemylist.add(Enemy(8*32, 3*32, -3))
-# elif spawn_rand == 2:
-#     enemylist.add(Enemy(21*32, 3*32, -3))
+bulletlist = pygame.sprite.Group()
+
 MAIN_PLAYER = Player()
 
 rungame = True
 while rungame:
-
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -284,17 +298,14 @@ while rungame:
         elif event.type == KEYDOWN and event.key == pygame.K_d:
             right_pressed = True
             left_pressed = False
-        elif event.type == KEYDOWN and event.key == pygame.K_w:
-            up_pressed = True
         else:
-            up_pressed = False
             left_pressed = False
             right_pressed = False
         
-        if event.type == KEYDOWN and event.key == pygame.K_s:
-            down_pressed = True
-        else:
-            down_pressed = False
+        if event.type == KEYDOWN and event.key == pygame.K_SPACE and bullet_counter >= 25:
+            bullet_counter = 0
+            bulletlist.add(bullet())
+    bullet_counter += 1
 
     #screen.blit(track, (0,0))
     #MAIN_PLAYER.turn(Count)
@@ -302,9 +313,17 @@ while rungame:
     MAIN_PLAYER.move()
     MAIN_PLAYER.update()
     CollectCoins(MAIN_PLAYER)
+    for i in bulletlist:
+        i.move()
     for i in enemylist:
         i.switchimage()
         i.move()
+        if i.collisioncheck(MAIN_PLAYER) == 'player death':
+            rungame = False
+        for x in bulletlist:
+            if i.collisioncheck(x) == 'hit':
+                enemylist.remove(i)
+
     
     spawn_counter += 1
     if spawn_counter >= 300:
@@ -321,4 +340,5 @@ while rungame:
 
     pygame.display.update()
     fpsClock.tick(60)
+
 

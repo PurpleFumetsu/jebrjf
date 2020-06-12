@@ -34,7 +34,6 @@ sawn_rand = 0
 
 #checks if a sprite is on the ground
 def OnGround(player):
-
     blocks_hit_list = pygame.sprite.pygame.sprite.spritecollide(player, blocklist, False)
 
     if len(blocks_hit_list) >= 1:
@@ -243,40 +242,41 @@ class Blocks(pygame.sprite.Sprite):
         self.blocks_speed = 1.2
 
 # sets up and adds blocks to stage
-    blocklist = pygame.sprite.Group()
-    blocklist.add(Blocks(0, 15*32, 2))
+blocklist = pygame.sprite.Group()
+blocklist.add(Blocks(0, 15*32, 2))
 
-    # middle left
-    blocklist.add(Blocks(0, 10*32, 1))
-    blocklist.add(Blocks(32, 10*32, 1))
-    blocklist.add(Blocks(2*32, 10*32, 1))
-    blocklist.add(Blocks(3*32, 10*32, 1))
+# middle left
+blocklist.add(Blocks(0, 10*32, 1))
+blocklist.add(Blocks(32, 10*32, 1))
+blocklist.add(Blocks(2*32, 10*32, 1))
+blocklist.add(Blocks(3*32, 10*32, 1))
 
-    # middle right
-    blocklist.add(Blocks(28*32, 10*32, 1))
-    blocklist.add(Blocks(27*32, 10*32, 1))
-    blocklist.add(Blocks(26*32, 10*32, 1))
-    blocklist.add(Blocks(25*32, 10*32, 1))
+# middle right
+blocklist.add(Blocks(28*32, 10*32, 1))
+blocklist.add(Blocks(27*32, 10*32, 1))
+blocklist.add(Blocks(26*32, 10*32, 1))
+blocklist.add(Blocks(25*32, 10*32, 1))
 
-    # middle center
-    blocklist.add(Blocks(12*32, 10*32, 1))
-    blocklist.add(Blocks(13*32, 10*32, 1))
-    blocklist.add(Blocks(14*32, 10*32, 1))
-    blocklist.add(Blocks(15*32, 10*32, 1))
-    blocklist.add(Blocks(16*32, 10*32, 1))
-    blocklist.add(Blocks(17*32, 10*32, 1))
+# middle center
+blocklist.add(Blocks(12*32, 10*32, 1))
+blocklist.add(Blocks(13*32, 10*32, 1))
+blocklist.add(Blocks(14*32, 10*32, 1))
+blocklist.add(Blocks(15*32, 10*32, 1))
+blocklist.add(Blocks(16*32, 10*32, 1))
+blocklist.add(Blocks(17*32, 10*32, 1))
 
-    # top left
-    blocklist.add(Blocks(6*32, 5*32, 1))
-    blocklist.add(Blocks(7*32, 5*32, 1))
-    blocklist.add(Blocks(8*32, 5*32, 1))
-    blocklist.add(Blocks(9*32, 5*32, 1))
+# top left
+blocklist.add(Blocks(6*32, 5*32, 1))
+blocklist.add(Blocks(7*32, 5*32, 1))
+blocklist.add(Blocks(8*32, 5*32, 1))
+blocklist.add(Blocks(9*32, 5*32, 1))
 
-    # top right
-    blocklist.add(Blocks(20*32, 5*32, 1))
-    blocklist.add(Blocks(21*32, 5*32, 1))
-    blocklist.add(Blocks(22*32, 5*32, 1))
-    blocklist.add(Blocks(23*32, 5*32, 1))
+# top right
+blocklist.add(Blocks(20*32, 5*32, 1))
+blocklist.add(Blocks(21*32, 5*32, 1))
+blocklist.add(Blocks(22*32, 5*32, 1))
+blocklist.add(Blocks(23*32, 5*32, 1))
+
 # sets up enemy and bullet sprite groups
 enemylist = pygame.sprite.Group()
 bulletlist = pygame.sprite.Group()
